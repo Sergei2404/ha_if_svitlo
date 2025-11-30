@@ -1,8 +1,11 @@
 import aiohttp
+import logging
 from datetime import datetime, date, time
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import HomeAssistant
 from .const import API_URL, DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 def parse_time(tstr):
     return datetime.strptime(tstr, "%H:%M").time()
@@ -11,7 +14,7 @@ class BESvitloCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, queue: str):
         super().__init__(
             hass,
-            logger=hass.logger,
+            logger=_LOGGER,
             name="be_svitlo",
             update_interval=60,  # оновлення раз на хвилину
         )
