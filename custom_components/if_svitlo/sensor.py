@@ -8,6 +8,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         BESvitloCurrentStatusSensor(coordinator, entry),
         BESvitloNextChangeSensor(coordinator, entry),
         BESvitloTodayIntervalsSensor(coordinator, entry),
+        BESvitloTomorrowIntervalsSensor(coordinator, entry),
     ])
 
 class BaseBESvitloSensor(CoordinatorEntity, SensorEntity):
@@ -22,7 +23,7 @@ class BaseBESvitloSensor(CoordinatorEntity, SensorEntity):
 class BESvitloCurrentStatusSensor(BaseBESvitloSensor):
     @property
     def name(self):
-        return f"BE Svitlo {self.entry.data['queue']} – Статус"
+        return f"IF Svitlo {self.entry.data['queue']} – Статус"
 
     @property
     def unique_id(self):
@@ -37,7 +38,7 @@ class BESvitloCurrentStatusSensor(BaseBESvitloSensor):
 class BESvitloNextChangeSensor(BaseBESvitloSensor):
     @property
     def name(self):
-        return f"BE Svitlo {self.entry.data['queue']} – Наступна зміна"
+        return f"IF Svitlo {self.entry.data['queue']} – Наступна зміна"
 
     @property
     def unique_id(self):
@@ -52,7 +53,7 @@ class BESvitloNextChangeSensor(BaseBESvitloSensor):
 class BESvitloTodayIntervalsSensor(BaseBESvitloSensor):
     @property
     def name(self):
-        return f"BE Svitlo {self.entry.data['queue']} – Сьогодні"
+        return f"IF Svitlo {self.entry.data['queue']} – Сьогодні"
 
     @property
     def unique_id(self):
@@ -63,3 +64,19 @@ class BESvitloTodayIntervalsSensor(BaseBESvitloSensor):
         if self.coordinator.data is None:
             return None
         return self.coordinator.data.get("today_intervals", "")
+
+class BESvitloTomorrowIntervalsSensor(BaseBESvitloSensor):
+    @property
+    def name(self):
+        return f"IF Svitlo {self.entry.data['queue']} – Завтра"
+
+    @property
+    def unique_id(self):
+        return f"{self.entry.entry_id}_tomorrow_intervals"
+
+    @property
+    def state(self):
+        if self.coordinator.data is None:
+            return None
+        tomorrow_intervals = self.coordinator.data.get("tomorrow_intervals")
+        return tomorrow_intervals if tomorrow_intervals else "Немає відключень"

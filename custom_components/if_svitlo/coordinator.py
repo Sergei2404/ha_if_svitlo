@@ -37,25 +37,32 @@ class BESvitloCoordinator(DataUpdateCoordinator):
         if not data or not isinstance(data, list) or len(data) == 0:
             raise UpdateFailed("Empty or invalid data from API")
 
-        # Знаходимо запис для сьогодні
+        # Знаходимо запис для сьогодні та завтра
         today = datetime.now().date()
+        tomorrow = today + timedelta(days=1)
         today_str = today.strftime("%d.%m.%Y")
+        tomorrow_str = tomorrow.strftime("%d.%m.%Y")
         
-        entry = None
+        today_entry = None
+        tomorrow_entry = None
+        
         for item in data:
-            if isinstance(item, dict) and item.get("eventDate") == today_str:
-                entry = item
-                break
+            if isinstance(item, dict):
+                event_date = item.get("eventDate")
+                if event_date == today_str:
+                    today_entry = item
+                elif event_date == tomorrow_str:
+                    tomorrow_entry = item
         
         # Якщо не знайдено сьогоднішній запис, беремо перший (fallback)
-        if entry is None:
+        if today_entry is None:
             _LOGGER.warning(f"No schedule found for today ({today_str}), using first available entry")
-            entry = data[0]
+            today_entry = data[0] if data else None
         
-        if not isinstance(entry, dict) or "queues" not in entry:
+        if not isinstance(today_entry, dict) or "queues" not in today_entry:
             raise UpdateFailed("Invalid data structure from API")
         
-        queues = entry.get("queues", {})
+        queues = today_entry.get("queues", {})
         if self.queue not in queues:
             # Якщо черга не знайдена, можливо сьогодні немає відключень
             intervals = []
@@ -63,6 +70,17 @@ class BESvitloCoordinator(DataUpdateCoordinator):
             intervals = queues[self.queue]
             if not isinstance(intervals, list):
                 raise UpdateFailed("Invalid intervals format")
+        
+        # Обробка завтрашніх відключень
+        tomorrow_intervals = []
+        if tomorrow_entry and isinstance(tomorrow_entry, dict) and "queues" in tomorrow_entry:
+            tomorrow_queues = tomorrow_entry.get("queues", {})
+            if self.queue in tomorrow_queues:
+                tomorrow_queue_data = tomorrow_queues[self.queue]
+                if isinstance(tomorrow_queue_data, list):
+                    for item in tomorrow_queue_data:
+                        if isinstance(item, dict) and "from" in item and "to" in item:
+                            tomorrow_intervals.append(f"{item['from']}-{item['to']}")
 
         now = datetime.now().time()
 
@@ -101,5 +119,6 @@ class BESvitloCoordinator(DataUpdateCoordinator):
         return {
             "current_status": current_status,
             "next_change": next_change.strftime("%H:%M") if next_change else None,
-            "today_intervals": ", ".join(today_ranges),
+            "today_intervals": ", ".join(today_ranges) if today_ranges else "",
+            "tomorrow_intervals": ", ".join(tomorrow_intervals) if tomorrow_intervals else None,
         }
