@@ -1,6 +1,6 @@
 import aiohttp
 import logging
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.core import HomeAssistant
 from .const import API_URL, DOMAIN
@@ -16,7 +16,7 @@ class BESvitloCoordinator(DataUpdateCoordinator):
             hass,
             logger=_LOGGER,
             name="be_svitlo",
-            update_interval=60,  # оновлення раз на хвилину
+            update_interval=timedelta(seconds=60),  # оновлення раз на хвилину
         )
         self.queue = queue
 
