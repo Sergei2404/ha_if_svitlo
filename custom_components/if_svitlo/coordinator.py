@@ -10,6 +10,10 @@ _LOGGER = logging.getLogger(__name__)
 def parse_time(tstr):
     return datetime.strptime(tstr, "%H:%M").time()
 
+def parse_date(dstr):
+    """Parse date string in format DD.MM.YYYY"""
+    return datetime.strptime(dstr, "%d.%m.%Y").date()
+
 class BESvitloCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, queue: str):
         super().__init__(
@@ -29,12 +33,36 @@ class BESvitloCoordinator(DataUpdateCoordinator):
                     raise UpdateFailed(f"HTTP {resp.status}")
                 data = await resp.json()
 
-        # Очікується масив із одним елементом (план на сьогодні)
-        if not data:
-            return None
+        # Очікується масив із записами для різних днів
+        if not data or not isinstance(data, list) or len(data) == 0:
+            raise UpdateFailed("Empty or invalid data from API")
 
-        entry = data[0]
-        intervals = entry["queues"][self.queue]
+        # Знаходимо запис для сьогодні
+        today = datetime.now().date()
+        today_str = today.strftime("%d.%m.%Y")
+        
+        entry = None
+        for item in data:
+            if isinstance(item, dict) and item.get("eventDate") == today_str:
+                entry = item
+                break
+        
+        # Якщо не знайдено сьогоднішній запис, беремо перший (fallback)
+        if entry is None:
+            _LOGGER.warning(f"No schedule found for today ({today_str}), using first available entry")
+            entry = data[0]
+        
+        if not isinstance(entry, dict) or "queues" not in entry:
+            raise UpdateFailed("Invalid data structure from API")
+        
+        queues = entry.get("queues", {})
+        if self.queue not in queues:
+            # Якщо черга не знайдена, можливо сьогодні немає відключень
+            intervals = []
+        else:
+            intervals = queues[self.queue]
+            if not isinstance(intervals, list):
+                raise UpdateFailed("Invalid intervals format")
 
         now = datetime.now().time()
 
@@ -43,8 +71,14 @@ class BESvitloCoordinator(DataUpdateCoordinator):
         today_ranges = []
 
         for item in intervals:
-            start = parse_time(item["from"])
-            end   = parse_time(item["to"])
+            if not isinstance(item, dict) or "from" not in item or "to" not in item:
+                continue
+            try:
+                start = parse_time(item["from"])
+                end   = parse_time(item["to"])
+            except (ValueError, KeyError) as e:
+                _LOGGER.warning(f"Invalid time format in interval: {item}, error: {e}")
+                continue
 
             today_ranges.append(f"{item['from']}-{item['to']}")
 
