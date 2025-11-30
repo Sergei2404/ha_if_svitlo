@@ -11,7 +11,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 class BaseBESvitloSensor(SensorEntity):
-    def init(self, coordinator, entry):
+    def __init__(self, coordinator, entry):
         self.coordinator = coordinator
         self.entry = entry
 

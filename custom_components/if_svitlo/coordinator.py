@@ -8,8 +8,8 @@ def parse_time(tstr):
     return datetime.strptime(tstr, "%H:%M").time()
 
 class BESvitloCoordinator(DataUpdateCoordinator):
-    def init(self, hass: HomeAssistant, queue: str):
-        super().init(
+    def __init__(self, hass: HomeAssistant, queue: str):
+        super().__init__(
             hass,
             logger=hass.logger,
             name="be_svitlo",
