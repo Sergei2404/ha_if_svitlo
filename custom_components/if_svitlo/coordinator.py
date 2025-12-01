@@ -15,12 +15,14 @@ def parse_date(dstr):
     return datetime.strptime(dstr, "%d.%m.%Y").date()
 
 class BESvitloCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, queue: str):
+    def __init__(self, hass: HomeAssistant, queue: str, update_interval: timedelta = None):
+        if update_interval is None:
+            update_interval = timedelta(seconds=60)  # за замовчуванням оновлення раз на хвилину
         super().__init__(
             hass,
             logger=_LOGGER,
             name="be_svitlo",
-            update_interval=timedelta(seconds=60),  # оновлення раз на хвилину
+            update_interval=update_interval,
         )
         self.queue = queue
 
