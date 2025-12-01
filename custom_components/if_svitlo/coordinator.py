@@ -116,9 +116,21 @@ class BESvitloCoordinator(DataUpdateCoordinator):
                 else:
                     next_change = min(next_change, end)
 
+        # Обчислюємо хвилини до наступної зміни
+        next_change_minutes = 0  # 0 якщо немає наступної зміни
+        if next_change:
+            now_dt = datetime.now()
+            next_change_dt = datetime.combine(today, next_change)
+            # Якщо час наступної зміни вже пройшов сьогодні, значить це завтра
+            if next_change_dt < now_dt:
+                next_change_dt = datetime.combine(tomorrow, next_change)
+            delta = next_change_dt - now_dt
+            next_change_minutes = int(delta.total_seconds() / 60)
+
         return {
             "current_status": current_status,
             "next_change": next_change.strftime("%H:%M") if next_change else None,
+            "next_change_minutes": next_change_minutes,
             "today_intervals": ", ".join(today_ranges) if today_ranges else "",
             "tomorrow_intervals": ", ".join(tomorrow_intervals) if tomorrow_intervals else None,
         }

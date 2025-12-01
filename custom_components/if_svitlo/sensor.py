@@ -7,6 +7,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([
         BESvitloCurrentStatusSensor(coordinator, entry),
         BESvitloNextChangeSensor(coordinator, entry),
+        BESvitloNextChangeMinutesSensor(coordinator, entry),
         BESvitloTodayIntervalsSensor(coordinator, entry),
         BESvitloTomorrowIntervalsSensor(coordinator, entry),
     ])
@@ -49,6 +50,27 @@ class BESvitloNextChangeSensor(BaseBESvitloSensor):
         if self.coordinator.data is None:
             return None
         return self.coordinator.data.get("next_change")
+
+class BESvitloNextChangeMinutesSensor(BaseBESvitloSensor):
+    @property
+    def name(self):
+        return f"IF Svitlo {self.entry.data['queue']} – Хвилин до зміни"
+
+    @property
+    def unique_id(self):
+        return f"{self.entry.entry_id}_next_change_minutes"
+
+    @property
+    def native_unit_of_measurement(self):
+        return "min"
+
+    @property
+    def state(self):
+        if self.coordinator.data is None:
+            return None
+        minutes = self.coordinator.data.get("next_change_minutes", 0)
+        # Повертаємо 0 якщо немає наступної зміни
+        return minutes
 
 class BESvitloTodayIntervalsSensor(BaseBESvitloSensor):
     @property
