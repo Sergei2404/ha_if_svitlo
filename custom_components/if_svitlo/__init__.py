@@ -6,7 +6,8 @@ from .const import DOMAIN
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     queue = entry.data["queue"]
-    update_interval_seconds = entry.data.get("update_interval", 60)
+    # Читаємо update_interval з data або options
+    update_interval_seconds = entry.options.get("update_interval") or entry.data.get("update_interval", 60)
     update_interval = timedelta(seconds=update_interval_seconds)
     coordinator = BESvitloCoordinator(hass, queue, update_interval)
 
@@ -24,3 +25,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+async def async_update_entry(hass: HomeAssistant, entry: ConfigEntry):
+    """Reload config entry when options are updated."""
+    await hass.config_entries.async_reload(entry.entry_id)
